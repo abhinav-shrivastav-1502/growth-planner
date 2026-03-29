@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Growth Experiment Planner — by Abhinav Shrivastav</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #141414;
+    --surface2: #1a1a1a;
+    --border: #262626;
+    --accent: #c8f135;
+    --accent2: #f1c835;
+    --text: #f0ede6;
+    --muted: #6b6b6b;
+    --danger: #ff4f4f;
+    --success: #4fbb6d;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: linear-gradient(rgba(200,241,53,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(200,241,53,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 48px 24px 80px; position: relative; z-index: 1; }
+
+  header { margin-bottom: 48px; border-bottom: 1px solid var(--border); padding-bottom: 32px; }
+  .eyebrow { font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; }
+  h1 { font-family: 'Fraunces', serif; font-size: clamp(36px, 6vw, 56px); font-weight: 700; line-height: 1.05; letter-spacing: -0.02em; margin-bottom: 12px; }
+  h1 em { font-style: italic; color: var(--accent); }
+  .subtitle { color: var(--muted); font-size: 15px; font-weight: 300; line-height: 1.6; max-width: 500px; }
+  .subtitle a { color: var(--accent); text-decoration: none; }
+  .subtitle a:hover { text-decoration: underline; }
+
+  .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; margin-bottom: 24px; }
+  .examples-label { font-size: 10px; color: var(--muted); margin-bottom: 8px; font-family: 'DM Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; }
+  .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
+  .chip { background: transparent; border: 1px solid var(--border); border-radius: 99px; color: var(--muted); font-size: 12px; padding: 5px 12px; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(200,241,53,0.05); }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); }
+
+  input, textarea { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 11px 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; resize: none; width: 100%; }
+  input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(200,241,53,0.08); }
+  input::placeholder, textarea::placeholder { color: var(--muted); opacity: 0.5; }
+  textarea { min-height: 76px; line-height: 1.5; }
+
+  .run-btn { width: 100%; background: var(--accent); color: #0d0d0d; border: none; border-radius: 12px; font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; padding: 15px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .run-btn:hover:not(:disabled) { background: #d9ff3d; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(200,241,53,0.2); }
+  .run-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  .loading { display: none; align-items: center; gap: 12px; padding: 28px 0; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 12px; }
+  .loading.show { display: flex; }
+  .spin { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error { background: rgba(255,79,79,0.08); border: 1px solid rgba(255,79,79,0.2); border-radius: 12px; padding: 16px 20px; display: none; margin-top: 16px; }
+  .error.show { display: block; }
+  .error-title { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--danger); margin-bottom: 6px; }
+  .error-msg { font-size: 13px; color: #ff9f9f; line-height: 1.6; }
+
+  .output { display: none; flex-direction: column; gap: 14px; }
+  .output.show { display: flex; animation: fadeUp 0.35s ease forwards; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+  .output-header { display: flex; align-items: center; justify-content: space-between; }
+  .output-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+  .new-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 12px; cursor: pointer; transition: all 0.2s; }
+  .new-btn:hover { border-color: var(--muted); color: var(--text); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+  .card-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .card-value { font-size: 14px; line-height: 1.65; color: var(--text); }
+
+  .hypothesis-card { background: linear-gradient(135deg, #1a1f0d, #131a05); border: 1px solid rgba(200,241,53,0.18); border-radius: 16px; padding: 26px; position: relative; overflow: hidden; }
+  .hypothesis-card::before { content: '"'; position: absolute; top: -20px; right: 16px; font-family: 'Fraunces', serif; font-size: 140px; color: rgba(200,241,53,0.05); line-height: 1; pointer-events: none; }
+  .hypothesis-card .card-value { font-family: 'Fraunces', serif; font-size: 16px; font-style: italic; color: #e8f5c0; line-height: 1.7; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .primary-card { background: var(--surface); border: 1px solid rgba(200,241,53,0.22); border-radius: 14px; padding: 22px; }
+  .primary-card .card-value { font-family: 'DM Mono', monospace; font-size: 13px; color: var(--accent); }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .tag { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--muted); padding: 4px 9px; }
+
+  .versus { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .v-side { padding: 22px; background: var(--surface); }
+  .v-side:first-child { border-right: 1px solid var(--border); }
+  .v-badge { display: inline-block; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; padding: 3px 9px; border-radius: 4px; margin-bottom: 10px; }
+  .v-badge.ctrl { background: rgba(107,107,107,0.15); color: var(--muted); }
+  .v-badge.var  { background: rgba(200,241,53,0.1);  color: var(--accent); }
+  .v-side .card-value { font-size: 13px; line-height: 1.55; }
+
+  .copy-inner { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-top: 10px; }
+  .copy-row { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .copy-row:last-child { border-bottom: none; }
+  .copy-k { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); width: 72px; flex-shrink: 0; padding-top: 1px; }
+  .copy-v { font-size: 13px; line-height: 1.5; }
+  .copy-v.green  { color: var(--accent); }
+  .copy-v.yellow { color: var(--accent2); }
+
+  .conf-pill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 99px; font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em; margin-bottom: 10px; }
+  .conf-pill.high   { background: rgba(79,187,109,0.1); color: var(--success); border: 1px solid rgba(79,187,109,0.2); }
+  .conf-pill.medium { background: rgba(241,200,53,0.1); color: var(--accent2); border: 1px solid rgba(241,200,53,0.2); }
+  .conf-pill.low    { background: rgba(255,79,79,0.08); color: var(--danger);  border: 1px solid rgba(255,79,79,0.15); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); text-align: center; font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 0.08em; }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--accent); }
+
+  @media (max-width: 580px) {
+    .form-grid, .two-col, .versus { grid-template-columns: 1fr; }
+    .v-side:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="eyebrow">▸ Growth Lab by Abhinav Shrivastav</div>
+    <h1>Experiment<br><em>Planner</em></h1>
+    <p class="subtitle">AI-powered A/B experiment generator for growth marketers. Built by <a href="https://linkedin.com/in/abhinav-shrivastav-706983149" target="_blank">Abhinav Shrivastav</a> — Growth & GTM Manager with 6M+ users acquired.</p>
+  </header>
+
+  <div class="form-card">
+    <div class="examples-label">Try an example →</div>
+    <div class="examples">
+      <button class="chip" onclick="fill('agoda')">Agoda Cash</button>
+      <button class="chip" onclick="fill('codecademy')">Codecademy Bootcamps</button>
+      <button class="chip" onclick="fill('internshala')">Internshala Jobs</button>
+      <button class="chip" onclick="fill('saas')">SaaS Onboarding</button>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Product / Feature</label>
+        <input type="text" id="product" placeholder="e.g. Agoda Cash" />
+      </div>
+      <div class="form-group">
+        <label>Growth Goal</label>
+        <input type="text" id="goal" placeholder="e.g. Adoption / Activation" />
+      </div>
+      <div class="form-group full">
+        <label>User Segment</label>
+        <textarea id="segment" placeholder="e.g. Paying customers using traditional payment methods like cards"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Channel (optional)</label>
+        <input type="text" id="channel" placeholder="e.g. Checkout page, Email" />
+      </div>
+      <div class="form-group">
+        <label>Constraint (optional)</label>
+        <input type="text" id="constraint" placeholder="e.g. No dev resources" />
+      </div>
+    </div>
+
+    <button class="run-btn" id="runBtn" onclick="generate()">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1L12 6.5L6.5 12M1 6.5H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Generate Experiment Plan
+    </button>
+  </div>
+
+  <div class="loading" id="loading">
+    <div class="spin"></div>
+    <span>Generating your experiment plan...</span>
+  </div>
+
+  <div class="error" id="error">
+    <div class="error-title">Error</div>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div class="output" id="output">
+    <div class="output-header">
+      <div class="output-label">▸ Experiment Plan</div>
+      <button class="new-btn" onclick="resetForm()">← New experiment</button>
+    </div>
+    <div class="hypothesis-card">
+      <div class="card-label">Hypothesis</div>
+      <div class="card-value" id="r-hypothesis"></div>
+    </div>
+    <div class="two-col">
+      <div class="primary-card">
+        <div class="card-label">Primary Metric</div>
+        <div class="card-value" id="r-primary"></div>
+      </div>
+      <div class="card">
+        <div class="card-label">Secondary Metrics</div>
+        <div class="tags" id="r-secondary"></div>
+      </div>
+    </div>
+    <div class="versus">
+      <div class="v-side">
+        <div class="v-badge ctrl">Control</div>
+        <div class="card-value" id="r-control"></div>
+      </div>
+      <div class="v-side">
+        <div class="v-badge var">Variant</div>
+        <div class="card-value" id="r-variant"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Messaging Copy</div>
+      <div class="copy-inner" id="r-copy"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Confidence Assessment</div>
+      <div id="r-conf-pill"></div>
+      <div class="card-value" id="r-conf-reason"></div>
+    </div>
+  </div>
+
+  <footer>
+    Built by <a href="https://linkedin.com/in/abhinav-shrivastav-706983149" target="_blank">Abhinav Shrivastav</a> &nbsp;·&nbsp; Growth & GTM Manager &nbsp;·&nbsp; 6M+ users acquired
+  </footer>
+
+</div>
+<script>
+  const examples = {
+    agoda:       { product: 'Agoda Cash', goal: 'Adoption / Activation', segment: 'Paying customers using traditional payment methods like credit/debit cards', channel: 'Checkout page', constraint: '' },
+    codecademy:  { product: 'Codecademy Bootcamps', goal: 'Improve enrollment conversion', segment: "Indian users who visited the bootcamp page but didn't enroll in the last 14 days", channel: 'Landing page', constraint: 'No major dev resources' },
+    internshala: { product: 'Internshala Job Listings', goal: 'Increase application completion rate', segment: 'College students who opened job listings but dropped off before submitting', channel: 'Email + push notification', constraint: 'Mobile-first users' },
+    saas:        { product: 'B2B SaaS dashboard', goal: 'Reduce time to first value', segment: "Free trial users who signed up but haven't connected their data source", channel: 'In-app onboarding', constraint: 'Single-engineer sprint' }
+  };
+
+  function fill(k) {
+    const e = examples[k];
+    document.getElementById('product').value    = e.product;
+    document.getElementById('goal').value       = e.goal;
+    document.getElementById('segment').value    = e.segment;
+    document.getElementById('channel').value    = e.channel;
+    document.getElementById('constraint').value = e.constraint;
+  }
+
+  function resetForm() {
+    document.getElementById('output').classList.remove('show');
+    document.getElementById('error').classList.remove('show');
+    document.getElementById('runBtn').disabled = false;
+  }
+
+  function showError(msg) {
+    document.getElementById('errorMsg').textContent = msg;
+    document.getElementById('error').classList.add('show');
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('runBtn').disabled = false;
+  }
+
+  async function generate() {
+    const product    = document.getElementById('product').value.trim();
+    const goal       = document.getElementById('goal').value.trim();
+    const segment    = document.getElementById('segment').value.trim();
+    const channel    = document.getElementById('channel').value.trim();
+    const constraint = document.getElementById('constraint').value.trim();
+
+    if (!product || !goal || !segment) { alert('Please fill in Product, Goal and User Segment.'); return; }
+
+    document.getElementById('runBtn').disabled = true;
+    document.getElementById('output').classList.remove('show');
+    document.getElementById('error').classList.remove('show');
+    document.getElementById('loading').classList.add('show');
+
+    try {
+      const res = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product, goal, segment, channel, constraint })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) { showError(data.error || 'Something went wrong. Please try again.'); return; }
+
+      render(data);
+
+    } catch (e) {
+      showError('Network error: ' + e.message);
+    } finally {
+      document.getElementById('loading').classList.remove('show');
+    }
+  }
+
+  function render(d) {
+    document.getElementById('r-hypothesis').textContent = d.hypothesis || '—';
+    document.getElementById('r-primary').textContent    = d.primary_metric || '—';
+
+    const sec = document.getElementById('r-secondary');
+    sec.innerHTML = '';
+    (d.secondary_metrics || []).forEach(m => {
+      const t = document.createElement('span'); t.className = 'tag'; t.textContent = m; sec.appendChild(t);
+    });
+
+    document.getElementById('r-control').textContent = d.control || '—';
+    document.getElementById('r-variant').textContent = d.variant || '—';
+
+    const c = d.messaging_copy || {};
+    document.getElementById('r-copy').innerHTML =
+      `<div class="copy-row"><span class="copy-k">Control</span><span class="copy-v">${c.control_headline || '—'}</span></div>` +
+      `<div class="copy-row"><span class="copy-k">Variant</span><span class="copy-v green">${c.variant_headline || '—'}</span></div>` +
+      `<div class="copy-row"><span class="copy-k">CTA</span><span class="copy-v yellow">${c.variant_cta || '—'}</span></div>`;
+
+    const lvl = (d.confidence_level || 'medium').toLowerCase();
+    document.getElementById('r-conf-pill').innerHTML =
+      `<div class="conf-pill ${lvl}"><div class="dot"></div>${d.confidence_level || 'Medium'}</div>`;
+    document.getElementById('r-conf-reason').textContent = d.confidence_reason || '—';
+
+    document.getElementById('output').classList.add('show');
+    document.getElementById('runBtn').disabled = false;
+  }
+</script>
+</body>
+</html>
